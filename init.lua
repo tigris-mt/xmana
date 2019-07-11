@@ -7,7 +7,7 @@ function xmana.level_to_mana(level)
 end
 
 function xmana.mana_to_level(mana)
-	return math.floor(math.max(0, math.log(math.max(0.001, mana / 100)) / math.log(1.1)) + 0.5)
+	return math.floor(math.max(0, math.log(math.max(0.001, mana / 100)) / math.log(1.1)))
 end
 
 -- Maximum mana possible.
@@ -44,15 +44,15 @@ hb.register_hudbar("xmana", 0xFFFFFF, S"Mana", {
 	bgicon = "xmana_bgicon.png"
 }, 0, xmana.MAX_LEVEL, false)
 
-minetest.register_privilege("xmana", {
-	"Can modify player mana.",
+minetest.register_privilege("mana", {
+	S"Can modify player mana.",
 	give_to_singleplayer = false
 })
 
-minetest.register_chatcommand("xmana", {
-	params = "<amount> [<username or self>] [<absolute boolean>]",
-	description = "Set player mana.",
-	privs = {xmana = true},
+minetest.register_chatcommand("mana", {
+	params = S"<amount> [<username or self>] [<absolute boolean>]",
+	description = S"Set player mana.",
+	privs = {mana = true},
 	func = function(caller, param)
 		local split = param:split(" ")
 
@@ -78,7 +78,7 @@ if minetest.get_modpath("doc") then
 		name = S"Mana",
 		data = {
 			text = table.concat({
-				S"Mana is the measure of energy gathered within you.",
+				S"Mana is the measure of energy gathered within you.\n",
 				S"Mana is organized into levels, with higher levels consisting of exponentially more mana.",
 				S"You may gain mana through various means.",
 				S"You may spend mana on special effects or items.",
@@ -86,3 +86,64 @@ if minetest.get_modpath("doc") then
 		},
 	})
 end
+
+xmana.spark_values = {1, 3, 9, 27, 81, 243, 729, 2187, 6561, 19683}
+
+for i,v in ipairs(xmana.spark_values) do
+	minetest.register_entity("xmana:spark_" .. i, {
+		physical = true,
+		collide_with_objects = false,
+		hp_max = 1,
+		visual = "sprite",
+		visual_size = {x = 0.5 + i / 5, y = 0.5 + i / 10},
+		textures = {"xmana_spark.png"},
+		collisionbox = {-0.3,-0.3,-0.3,0.3,-0.3,0.3},
+	})
+end
+
+function xmana.sparks(pos, value, owner)
+	local function best(n)
+		for i=#xmana.spark_values,1,-1 do
+			local v = xmana.spark_values[i]
+			if v <= value then
+				return i,v
+			end
+		end
+		error("invalid value")
+	end
+	while value > 0 do
+		local i,v = best(value)
+		value = value - v
+
+		local function r(c)
+			return c - 0.5 + math.random()
+		end
+		local obj = minetest.add_entity(vector.apply(pos, r), "xmana:spark_" .. i, owner)
+		if obj then
+			obj:set_velocity(vector.multiply(vector.apply(vector.new(0, 1, 0), r), 3))
+			obj:set_velocity(vector.new(0, -9.81, 0))
+		end
+	end
+end
+
+minetest.register_chatcommand("manaspark", {
+	params = S"<amount>",
+	description = S"Spawn mana sparks.",
+	privs = {xmana = true},
+	func = function(caller, param)
+		local amount = tonumber(param)
+		local player = minetest.get_player_by_name(caller)
+
+		if not amount then
+			return false, S"Invalid amount."
+		end
+
+		if not player then
+			return false, S"Cannot get position."
+		end
+
+		xmana.sparks(player:get_pos(), amount, caller)
+
+		return true, "Spawned sparks."
+	end,
+})
