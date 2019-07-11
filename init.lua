@@ -3,11 +3,11 @@ local S = minetest.get_translator("xmana")
 xmana = {}
 
 function xmana.level_to_mana(level)
-	return math.pow(1.1, level) * 100
+	return math.pow(level, 2.5)
 end
 
 function xmana.mana_to_level(mana)
-	return math.floor(math.max(0, math.log(math.max(0.001, mana / 100)) / math.log(1.1)))
+	return math.floor(math.pow(mana, 1/2.5))
 end
 
 -- Maximum mana possible.
