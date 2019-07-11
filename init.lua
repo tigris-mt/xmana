@@ -7,7 +7,7 @@ function xmana.level_to_mana(level)
 end
 
 function xmana.mana_to_level(mana)
-	return math.max(0, math.log(math.max(0.001, mana / 100)) / math.log(1.1))
+	return math.floor(math.max(0, math.log(math.max(0.001, mana / 100)) / math.log(1.1)) + 0.5)
 end
 
 -- Maximum mana possible.
@@ -23,7 +23,7 @@ function xmana.mana(player, set, relative)
 		set = math.max(0, math.min(set, xmana.MAX))
 
 		player:get_meta():set_float("xmana:mana", set)
-		hb.change_hudbar(player, "xmana", math.floor(xmana.mana_to_level(xmana.mana(player)) + 0.5), xmana.MAX_LEVEL)
+		hb.change_hudbar(player, "xmana", xmana.mana_to_level(xmana.mana(player)), xmana.MAX_LEVEL)
 	else
 		return player:get_meta():get_float("xmana:mana", set)
 	end
@@ -69,6 +69,20 @@ minetest.register_chatcommand("xmana", {
 		end
 
 		xmana.mana(target, amount, relative)
-		return true, S("@1 now has @2 levels (@3 mana)", target:get_player_name(), math.floor(xmana.mana_to_level(xmana.mana(target)) + 0.5), xmana.mana(target))
+		return true, S("@1 now has @2 levels (@3 mana)", target:get_player_name(), xmana.mana_to_level(xmana.mana(target)), xmana.mana(target))
 	end,
 })
+
+if minetest.get_modpath("doc") then
+	doc.add_entry("basics", "xmana", {
+		name = S"Mana",
+		data = {
+			text = table.concat({
+				S"Mana is the measure of energy gathered within you.",
+				S"Mana is organized into levels, with higher levels consisting of exponentially more mana.",
+				S"You may gain mana through various means.",
+				S"You may spend mana on special effects or items.",
+			}, "\n"),
+		},
+	})
+end
