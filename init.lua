@@ -48,7 +48,7 @@ minetest.register_on_joinplayer(function(player)
 	xmana.mana(player, 0)
 end)
 
-hb.register_hudbar("xmana", 0xFFFFFF, S"Mana", {
+hb.register_hudbar("xmana", 0xFFFFFF, S"Mana Level", {
 	bar = "xmana_bg.png",
 	icon = "xmana_icon.png",
 	bgicon = "xmana_bgicon.png"
@@ -83,7 +83,7 @@ minetest.register_chatcommand("mana", {
 	end,
 })
 
-if minetest.get_modpath("doc") then
+if minetest.get_modpath("doc_basics") then
 	doc.add_entry("basics", "xmana", {
 		name = S"Mana",
 		data = {
