@@ -98,6 +98,63 @@ for i,v in ipairs(xmana.spark_values) do
 		visual_size = {x = 0.5 + i / 5, y = 0.5 + i / 10},
 		textures = {"xmana_spark.png"},
 		collisionbox = {-0.3,-0.3,-0.3,0.3,-0.3,0.3},
+
+		on_activate = function(self, staticdata)
+			local d = (staticdata and #staticdata > 0) and minetest.deserialize(staticdata) or {}
+			self.owner = d.owner
+			self.age = d.age
+		end,
+
+		get_staticdata = function(self)
+			return minetest.serialize{
+				owner = self.owner,
+				age = self.age,
+			}
+		end,
+
+		on_step = function(self, dtime)
+			if not self.owner or not self.age then
+				self.object:remove()
+				return
+			end
+
+			self.age = self.age + dtime
+			if self.age > 300 then
+				self.object:remove()
+				return
+			end
+
+			if self.age < 1 then
+				return
+			end
+
+			local prop = self.object:get_properties()
+			prop.physical = true
+			self.object:set_acceleration(vector.new(0, -9.81, 0))
+
+			local player = minetest.get_player_by_name(self.owner)
+			if player then
+				local dist = vector.distance(player:get_pos(), self.object:get_pos())
+				if dist <= 2 then
+					if minetest.get_modpath("item_drop") then
+						minetest.sound_play("item_drop_pickup", {
+							pos = self.object:get_pos(),
+							gain = 0.2,
+						})
+					end
+					xmana.mana(player, v, true)
+					self.object:remove()
+					return
+				else
+					local norm = vector.normalize(vector.subtract(player:get_pos(), self.object:get_pos()))
+					self.object:set_velocity(vector.multiply(norm, 4 * math.max(1, dist / 2)))
+					prop.physical = false
+					self.object:set_acceleration(vector.new(0, 0, 0))
+				end
+			end
+
+			self.object:set_properties(prop)
+		end,
 	})
 end
 
@@ -118,15 +175,15 @@ function xmana.sparks(pos, value, owner)
 		local function r(c)
 			return c - 0.5 + math.random()
 		end
-		local obj = minetest.add_entity(vector.apply(pos, r), "xmana:spark_" .. i, owner)
+		local obj = minetest.add_entity(vector.apply(pos, r), "xmana:spark_" .. i, minetest.serialize({owner = owner, age = 0}))
 		if obj then
 			obj:set_velocity(vector.multiply(vector.apply(vector.new(0, 1, 0), r), 3))
-			obj:set_velocity(vector.new(0, -9.81, 0))
+			obj:set_acceleration(vector.new(0, -9.81, 0))
 		end
 	end
 end
 
-minetest.register_chatcommand("manaspark", {
+minetest.register_chatcommand("manasparks", {
 	params = S"<amount>",
 	description = S"Spawn mana sparks.",
 	privs = {xmana = true},
