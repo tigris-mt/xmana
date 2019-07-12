@@ -2,12 +2,15 @@ local S = minetest.get_translator("xmana")
 
 xmana = {}
 
+-- Exponential level growth.
+xmana.EXPONENT = tonumber(minetest.settings:get("xmana.exponent")) or 2.5
+
 function xmana.level_to_mana(level)
-	return math.pow(level, 2.5)
+	return math.pow(level, xmana.EXPONENT)
 end
 
 function xmana.mana_to_level(mana)
-	return math.floor(math.pow(mana, 1/2.5))
+	return math.floor(math.pow(mana, 1 / xmana.EXPONENT))
 end
 
 -- Maximum mana possible.
