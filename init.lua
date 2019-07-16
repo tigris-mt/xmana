@@ -17,6 +17,9 @@ end
 xmana.MAX_LEVEL = tonumber(minetest.settings:get("xmana.max_level")) or 30
 xmana.MAX = math.ceil(xmana.level_to_mana(xmana.MAX_LEVEL))
 
+-- Follow trigger distance.
+xmana.TRIGGER = tonumber(minetest.settings:get("xmana.trigger")) or 5
+
 -- Callback function to be overridden.
 -- Called whenever mana changes.
 -- See xmana.mana() for a description of the reason.
@@ -116,12 +119,14 @@ for i,v in ipairs(xmana.spark_values) do
 			local d = (staticdata and #staticdata > 0) and minetest.deserialize(staticdata) or {}
 			self.owner = d.owner
 			self.age = d.age
+			self.triggered = d.triggered
 		end,
 
 		get_staticdata = function(self)
 			return minetest.serialize{
 				owner = self.owner,
 				age = self.age,
+				triggered = self.triggered,
 			}
 		end,
 
@@ -145,24 +150,33 @@ for i,v in ipairs(xmana.spark_values) do
 			prop.physical = true
 			self.object:set_acceleration(vector.new(0, -9.81, 0))
 
+			if self.age > 3 and not self.triggered then
+				self.object:set_velocity(table.combine(self.object:get_velocity(), {x = 0, z = 0}))
+			end
+
 			local player = minetest.get_player_by_name(self.owner)
 			if player then
 				local dist = vector.distance(player:get_pos(), self.object:get_pos())
-				if dist <= 2 then
-					if minetest.get_modpath("item_drop") then
-						minetest.sound_play("item_drop_pickup", {
-							pos = self.object:get_pos(),
-							gain = 0.2,
-						})
+				if dist <= xmana.TRIGGER then
+					self.triggered = true
+				end
+				if self.triggered then
+					if dist <= 2 then
+						if minetest.get_modpath("item_drop") then
+							minetest.sound_play("item_drop_pickup", {
+								pos = self.object:get_pos(),
+								gain = 0.2,
+							})
+						end
+						xmana.mana(player, v, true, "spark")
+						self.object:remove()
+						return
+					else
+						local norm = vector.normalize(vector.subtract(player:get_pos(), self.object:get_pos()))
+						self.object:set_velocity(vector.multiply(norm, 4 * math.max(1, dist / 2)))
+						prop.physical = false
+						self.object:set_acceleration(vector.new(0, 0, 0))
 					end
-					xmana.mana(player, v, true, "spark")
-					self.object:remove()
-					return
-				else
-					local norm = vector.normalize(vector.subtract(player:get_pos(), self.object:get_pos()))
-					self.object:set_velocity(vector.multiply(norm, 4 * math.max(1, dist / 2)))
-					prop.physical = false
-					self.object:set_acceleration(vector.new(0, 0, 0))
 				end
 			end
 
@@ -188,7 +202,7 @@ function xmana.sparks(pos, value, owner)
 		local function r(c)
 			return c - 0.5 + math.random()
 		end
-		local obj = minetest.add_entity(vector.apply(pos, r), "xmana:spark_" .. i, minetest.serialize({owner = owner, age = 0}))
+		local obj = minetest.add_entity(vector.apply(pos, r), "xmana:spark_" .. i, minetest.serialize({owner = owner, age = 0, triggered = false}))
 		if obj then
 			obj:set_velocity(vector.multiply(vector.apply(vector.new(0, 1, 0), r), 3))
 			obj:set_acceleration(vector.new(0, -9.81, 0))
