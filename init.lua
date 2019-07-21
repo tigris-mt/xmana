@@ -61,7 +61,7 @@ hb.register_hudbar("xmana", 0xFFFFFF, S"Mana Level", {
 }, 0, xmana.MAX_LEVEL, false)
 
 minetest.register_privilege("mana", {
-	S"Can modify player mana.",
+	description = S"Can modify player mana.",
 	give_to_singleplayer = false
 })
 
