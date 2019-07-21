@@ -50,8 +50,7 @@ minetest.register_on_respawnplayer(function(player)
 end)
 
 minetest.register_on_joinplayer(function(player)
-	hb.init_hudbar(player, "xmana", 0, xmana.MAX_LEVEL)
-	xmana.mana(player, 0)
+	hb.init_hudbar(player, "xmana", xmana.mana_to_level(xmana.mana(player)), xmana.MAX_LEVEL)
 end)
 
 hb.register_hudbar("xmana", 0xFFFFFF, S"Mana Level", {
