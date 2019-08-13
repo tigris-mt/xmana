@@ -150,7 +150,7 @@ for i,v in ipairs(xmana.spark_values) do
 			self.object:set_acceleration(vector.new(0, -9.81, 0))
 
 			if self.age > 3 and not self.triggered then
-				self.object:set_velocity(table.combine(self.object:get_velocity(), {x = 0, z = 0}))
+				self.object:set_velocity(vector.multiply(self.object:get_velocity(), vector.new(0, 1, 0)))
 			end
 
 			local player = minetest.get_player_by_name(self.owner)
