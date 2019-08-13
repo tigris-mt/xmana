@@ -212,7 +212,7 @@ end
 minetest.register_chatcommand("manasparks", {
 	params = S"<amount>",
 	description = S"Spawn mana sparks.",
-	privs = {xmana = true},
+	privs = {mana = true},
 	func = function(caller, param)
 		local amount = tonumber(param)
 		local player = minetest.get_player_by_name(caller)
