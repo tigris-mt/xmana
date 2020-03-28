@@ -6,11 +6,11 @@ xmana = {}
 xmana.EXPONENT = tonumber(minetest.settings:get("xmana.exponent")) or 2.5
 
 function xmana.level_to_mana(level)
-	return math.pow(level, xmana.EXPONENT)
+	return level ^ xmana.EXPONENT
 end
 
 function xmana.mana_to_level(mana)
-	return math.floor(math.pow(mana, 1 / xmana.EXPONENT))
+	return math.floor(mana ^ (1 / xmana.EXPONENT))
 end
 
 -- Maximum mana possible.
