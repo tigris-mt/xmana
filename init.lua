@@ -37,7 +37,7 @@ function xmana.mana(player, set, relative, reason)
 		set = math.max(0, math.min(set, xmana.MAX))
 
 		player:get_meta():set_float("xmana:mana", set)
-		hb.change_hudbar(player, "xmana", xmana.mana_to_level(set), xmana.MAX_LEVEL)
+		hb.change_hudbar(player, "xmana", xmana.mana_to_level(set), xmana.MAX_LEVEL, nil, nil, nil, S("Mana: @1 (@2)", xmana.mana_to_level(set), set))
 
 		xmana.callback(player, old, set, reason)
 	else
@@ -49,15 +49,27 @@ minetest.register_on_respawnplayer(function(player)
 	xmana.mana(player, 0)
 end)
 
+local timer = 0
+
 minetest.register_on_joinplayer(function(player)
 	hb.init_hudbar(player, "xmana", xmana.mana_to_level(xmana.mana(player)), xmana.MAX_LEVEL)
+	timer = 10
 end)
 
-hb.register_hudbar("xmana", 0xFFFFFF, S"Mana Level", {
+minetest.register_globalstep(function(dtime)
+	if timer > 0 then
+		timer = timer - dtime
+		for _,player in ipairs(minetest.get_connected_players()) do
+			xmana.mana(player, 0, true)
+		end
+	end
+end)
+
+hb.register_hudbar("xmana", 0xFFFFFF, S"Mana", {
 	bar = "xmana_bg.png",
 	icon = "xmana_icon.png",
 	bgicon = "xmana_bgicon.png"
-}, 0, xmana.MAX_LEVEL, false)
+}, 0, xmana.MAX_LEVEL, false, "@1", {order = {"label"}})
 
 minetest.register_privilege("mana", {
 	description = S"Can modify player mana.",
